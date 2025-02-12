@@ -75,7 +75,6 @@ export const Calendar = () => {
         if (fromWorkoutId === toWorkoutId) {
           // Same workout - reorder
           if (fromPosition !== toPosition) {
-            console.log("Reordering exercise:", { fromPosition, toPosition, workoutId: fromWorkoutId });
             reorderExercise(fromWorkoutId, fromPosition, toPosition);
           }
         } else {
@@ -87,10 +86,6 @@ export const Calendar = () => {
 
     setActiveItem(null);
   };
-
-  if (!weekWorkouts) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <DndContext

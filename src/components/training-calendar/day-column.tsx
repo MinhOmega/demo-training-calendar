@@ -40,8 +40,8 @@ export const DayColumn = ({ day }: DayColumnProps) => {
   return (
     <div className="flex flex-col h-full">
       {/* Day header outside the droppable area */}
-      <div className="h-8 flex items-center">
-        <div className="text-[13px] font-semibold text-dateHeader">
+      <div className="flex items-center mb-[9px]">
+        <div className="text-ten font-semibold text-dateHeader">
           {day.date.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
         </div>
       </div>
@@ -51,24 +51,24 @@ export const DayColumn = ({ day }: DayColumnProps) => {
         ref={setNodeRef}
         className={`relative flex-1 min-h-[calc(100vh-10rem)] rounded-workout ${isOver ? "bg-gray-50/50" : "bg-main"}`}
       >
-        {/* Date indicator */}
-        <div className="absolute top-2 left-2">
-          <div className={`text-[15px] ${isToday ? "text-purple font-semibold" : "text-dateIndicator"}`}>
+        <div className="flex px-[10px] pb-[4px] pt-[10px] justify-between items-center">
+          {/* Date indicator */}
+          <div className={`text-eleven ${isToday ? "text-purple font-bold" : "text-dateIndicator font-semibold"}`}>
             {day.date.getDate().toString().padStart(2, "0")}
           </div>
+
+          {/* Add workout button */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center rounded"
+            aria-label="Add workout"
+          >
+            <Image src="/icons/ic-add.svg" alt="Add" width={12} height={12} />
+          </button>
         </div>
 
-        {/* Add workout button */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
-          aria-label="Add workout"
-        >
-          <Image src="/icons/ic-add.svg" alt="Add" width={13} height={14} />
-        </button>
-
         <SortableContext items={sortedWorkouts.map((w) => w.id)} strategy={verticalListSortingStrategy}>
-          <div className="px-2 pt-12 pb-2 space-y-2">
+          <div className="px-2 pb-2 space-y-1.5">
             {sortedWorkouts.map((workout, index) => (
               <WorkoutCard key={workout.id} workout={workout} fromDay={day.date} position={index} />
             ))}

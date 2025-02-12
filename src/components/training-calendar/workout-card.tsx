@@ -57,11 +57,11 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
       }`}
     >
       <div className="py-[5px]">
-        <div className="flex items-center justify-between mb-2 px-[7px]">
+        <div className="flex items-center justify-between mb-[5px] px-[7px]">
           <h3 className="text-purple text-sm font-bold truncate flex-1 pr-2" title={workout.name}>{workout.name}</h3>
           <button 
             className="text-gray-400 hover:text-gray-600" 
-            aria-label="More options"
+            aria-label="Drag workout to reorder"
             {...listeners}
             {...attributes}
           >
@@ -70,7 +70,7 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
         </div>
 
         <SortableContext items={workout.exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2 px-[3px]">
+          <div className="space-y-1 px-[3px]">
             {workout.exercises.map((exercise, index) => (
               <ExerciseItem key={exercise.id} exercise={exercise} workoutId={workout.id} position={index} />
             ))}
@@ -81,7 +81,7 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
       {/* Add exercise button */}
       <button 
         onClick={() => setIsModalOpen(true)}
-        className="w-full h-5 flex items-center justify-end pr-1" 
+        className="w-full flex items-center justify-end pr-1 mb-[5px]" 
         aria-label="Add exercise"
       >
         <Image src="/icons/ic-add.svg" alt="Add" width={13} height={14} />

@@ -42,16 +42,16 @@ export const ExerciseItem = ({ exercise, workoutId, isDragging = false, position
       style={style}
       {...listeners}
       {...attributes}
-      className={`flex items-end bg-white rounded-card px-3 py-2 border border-border shadow-card ${
+      className={`flex items-end bg-white rounded-card px-[8px] py-[5px] border border-border shadow-card ${
         dragState ? "opacity-50 scale-105" : ""
       } ${isBeingDragged ? "z-50" : "z-0"}`}
     >
-      <div className="text-xs text-exerciseItemTitle mr-3 whitespace-nowrap font-bold">{exercise.sets.length}x</div>
+      <div className="text-ten text-exerciseItemSets mr-3 whitespace-nowrap font-bold">{exercise.sets.length}x</div>
       <div className="min-w-0 flex-1 flex flex-col justify-start truncate text-end">
         <div className="text-sm font-semibold text-black truncate" title={exercise.name}>
           {exercise.name}
         </div>
-        <div className="text-xs text-exerciseItemTitle truncate mt-0.5" title={setsDisplay}>
+        <div className="text-ten text-exerciseItemNumber truncate mt-0.5 font-normal" title={setsDisplay}>
           {setsDisplay}
         </div>
       </div>
