@@ -15,6 +15,7 @@ export type Workout = {
   id: string;
   name: string;
   exercises: Exercise[];
+  position: number;
 };
 
 export type DayWorkouts = {
@@ -26,6 +27,7 @@ type TrainingContextType = {
   weekWorkouts: DayWorkouts[];
   moveWorkout: (fromDay: Date, toDay: Date, workoutId: string) => void;
   moveExercise: (fromWorkoutId: string, toWorkoutId: string, exerciseId: string) => void;
+  reorderWorkout: (dayDate: Date, fromPosition: number, toPosition: number) => void;
 };
 
 const TrainingContext = createContext<TrainingContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ const generateSampleWorkouts = (): Workout[] => {
     {
       id: "w1",
       name: "CHEST DAY - WITH ARM EXERCISES",
+      position: 0,
       exercises: [
         {
           id: "e1",
@@ -63,6 +66,7 @@ const generateSampleWorkouts = (): Workout[] => {
     {
       id: "w2",
       name: "LEG DAY",
+      position: 1,
       exercises: [
         {
           id: "e3",
@@ -84,6 +88,7 @@ const generateSampleWorkouts = (): Workout[] => {
     {
       id: "w3",
       name: "ARM DAY",
+      position: 2,
       exercises: [
         {
           id: "e6",
@@ -134,20 +139,28 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
       const fromDayIndex = newWeekWorkouts.findIndex((d) => d.date.toDateString() === fromDay.toDateString());
       const toDayIndex = newWeekWorkouts.findIndex((d) => d.date.toDateString() === toDay.toDateString());
 
-      // Return if invalid indices
       if (fromDayIndex === -1 || toDayIndex === -1) return prev;
 
       const fromWorkouts = [...newWeekWorkouts[fromDayIndex].workouts];
-      const workoutIndex = fromWorkouts.findIndex((w) => w?.id === workoutId);
+      const toWorkouts = [...newWeekWorkouts[toDayIndex].workouts];
 
-      // Return if workout not found
+      // Find and remove workout from source day
+      const workoutIndex = fromWorkouts.findIndex((w) => w?.id === workoutId);
       if (workoutIndex === -1) return prev;
 
-      const [workout] = fromWorkouts.splice(workoutIndex, 1);
+      const [movedWorkout] = fromWorkouts.splice(workoutIndex, 1);
+      if (!movedWorkout) return prev;
 
-      // Ensure workout exists before moving
-      if (!workout) return prev;
+      // Update positions in source day
+      fromWorkouts.forEach((workout, index) => {
+        workout.position = index;
+      });
 
+      // Add workout to target day at the end
+      movedWorkout.position = toWorkouts.length;
+      toWorkouts.push(movedWorkout);
+
+      // Update both days
       newWeekWorkouts[fromDayIndex] = {
         ...newWeekWorkouts[fromDayIndex],
         workouts: fromWorkouts,
@@ -155,7 +168,7 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
 
       newWeekWorkouts[toDayIndex] = {
         ...newWeekWorkouts[toDayIndex],
-        workouts: [...newWeekWorkouts[toDayIndex].workouts, workout],
+        workouts: toWorkouts,
       };
 
       return newWeekWorkouts;
@@ -195,7 +208,49 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const reorderWorkout = (dayDate: Date, fromPosition: number, toPosition: number) => {
+    setWeekWorkouts((prev) => {
+      const newWeekWorkouts = [...prev];
+      const dayIndex = newWeekWorkouts.findIndex((d) => d.date.toDateString() === dayDate.toDateString());
+
+      if (dayIndex === -1) return prev;
+
+      const dayWorkouts = [...newWeekWorkouts[dayIndex].workouts];
+
+      // Ensure positions are within bounds
+      if (
+        fromPosition < 0 ||
+        fromPosition >= dayWorkouts.length ||
+        toPosition < 0 ||
+        toPosition >= dayWorkouts.length
+      ) {
+        return prev;
+      }
+
+      // Remove workout from old position
+      const [movedWorkout] = dayWorkouts.splice(fromPosition, 1);
+
+      // Insert workout at new position
+      dayWorkouts.splice(toPosition, 0, movedWorkout);
+
+      // Update positions for all workouts in the day
+      dayWorkouts.forEach((workout, index) => {
+        workout.position = index;
+      });
+
+      // Update the day's workouts
+      newWeekWorkouts[dayIndex] = {
+        ...newWeekWorkouts[dayIndex],
+        workouts: dayWorkouts,
+      };
+
+      return newWeekWorkouts;
+    });
+  };
+
   return (
-    <TrainingContext.Provider value={{ weekWorkouts, moveWorkout, moveExercise }}>{children}</TrainingContext.Provider>
+    <TrainingContext.Provider value={{ weekWorkouts, moveWorkout, moveExercise, reorderWorkout }}>
+      {children}
+    </TrainingContext.Provider>
   );
 };

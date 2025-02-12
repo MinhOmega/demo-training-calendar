@@ -1,46 +1,52 @@
 "use client";
 
-import { useDraggable, useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Workout } from "@/contexts/training-context";
 import { ExerciseItem } from "./exercise-item";
 import Image from "next/image";
+import React from "react";
 
 interface WorkoutCardProps {
   workout: Workout;
   fromDay: Date;
   isDragging?: boolean;
+  position: number;
 }
 
-export const WorkoutCard = ({ workout, fromDay, isDragging = false }: WorkoutCardProps) => {
+export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: WorkoutCardProps) => {
   const {
     attributes,
     listeners,
-    setNodeRef: setDragRef,
+    setNodeRef,
+    transform,
+    transition,
     isDragging: isBeingDragged,
-  } = useDraggable({
+  } = useSortable({
     id: workout.id,
-    data: { type: "workout", fromDay },
+    data: {
+      type: "workout",
+      fromDay,
+      position,
+      workoutId: workout.id,
+      date: fromDay,
+    },
   });
-
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
-    id: `workout-${workout.id}`,
-    data: { type: "workout", workoutId: workout.id },
-  });
-
-  const setRefs = (node: HTMLDivElement) => {
-    setDragRef(node);
-    setDropRef(node);
-  };
 
   const dragState = isDragging || isBeingDragged;
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <div
-      ref={setRefs}
+      ref={setNodeRef}
+      style={style}
       {...listeners}
       {...attributes}
       className={`bg-white rounded-workout border border-border2 ${dragState ? "opacity-50 scale-105" : ""} ${
-        isOver ? "bg-gray-50" : ""
+        isBeingDragged ? "z-50" : "z-0"
       }`}
     >
       <div className="py-[5px]">
