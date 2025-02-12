@@ -9,7 +9,7 @@ import { WorkoutCard } from "./workout-card";
 import { ExerciseItem } from "./exercise-item";
 
 export const Calendar = () => {
-  const { weekWorkouts, moveWorkout, moveExercise, reorderWorkout } = useTraining();
+  const { weekWorkouts, moveWorkout, moveExercise, reorderWorkout, reorderExercise } = useTraining();
   const [activeItem, setActiveItem] = useState<{
     id: string;
     type: "workout" | "exercise";
@@ -66,9 +66,22 @@ export const Calendar = () => {
       }
     } else if (active.data.current?.type === "exercise") {
       const fromWorkoutId = active.data.current.fromWorkoutId;
-      const toWorkoutId = over.data.current?.workoutId;
-      if (toWorkoutId && fromWorkoutId !== toWorkoutId) {
-        moveExercise(fromWorkoutId, toWorkoutId, active.id as string);
+      const fromPosition = active.data.current.position;
+
+      if (over.data.current?.type === "exercise") {
+        const toWorkoutId = over.data.current.fromWorkoutId;
+        const toPosition = over.data.current.position;
+
+        if (fromWorkoutId === toWorkoutId) {
+          // Same workout - reorder
+          if (fromPosition !== toPosition) {
+            console.log("Reordering exercise:", { fromPosition, toPosition, workoutId: fromWorkoutId });
+            reorderExercise(fromWorkoutId, fromPosition, toPosition);
+          }
+        } else {
+          // Different workout - move
+          moveExercise(fromWorkoutId, toWorkoutId, active.id as string);
+        }
       }
     }
 
@@ -109,6 +122,7 @@ export const Calendar = () => {
                 .find((e) => e.id === activeItem.id)!
             }
             workoutId={activeItem.data.fromWorkoutId}
+            position={activeItem.data.position}
             isDragging
           />
         )}

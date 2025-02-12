@@ -1,42 +1,59 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Exercise } from "@/contexts/training-context";
 
 interface ExerciseItemProps {
   exercise: Exercise;
   workoutId: string;
   isDragging?: boolean;
+  position: number;
 }
 
-export const ExerciseItem = ({ exercise, workoutId, isDragging = false }: ExerciseItemProps) => {
+export const ExerciseItem = ({ exercise, workoutId, isDragging = false, position }: ExerciseItemProps) => {
   const {
     attributes,
     listeners,
     setNodeRef,
+    transform,
+    transition,
     isDragging: isBeingDragged,
-  } = useDraggable({
+  } = useSortable({
     id: exercise.id,
-    data: { type: "exercise", fromWorkoutId: workoutId },
+    data: {
+      type: "exercise",
+      fromWorkoutId: workoutId,
+      position,
+    },
   });
 
   const setsDisplay = exercise.sets.map((set) => `${set.weight} lb x ${set.reps}`).join(", ");
-
   const dragState = isDragging || isBeingDragged;
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
 
   return (
     <div
       ref={setNodeRef}
+      style={style}
       {...listeners}
       {...attributes}
-      className={`flex items-center bg-white rounded-card px-3 py-2 border border-border shadow-card ${
+      className={`flex items-end bg-white rounded-card px-3 py-2 border border-border shadow-card ${
         dragState ? "opacity-50 scale-105" : ""
-      }`}
+      } ${isBeingDragged ? "z-50" : "z-0"}`}
     >
-      <div className="text-xs text-gray-400 mr-3 whitespace-nowrap">{exercise.sets.length}x</div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-gray-900 truncate">{exercise.name}</div>
-        <div className="text-xs text-gray-500 truncate mt-0.5">{setsDisplay}</div>
+      <div className="text-xs text-exerciseItemTitle mr-3 whitespace-nowrap font-bold">{exercise.sets.length}x</div>
+      <div className="min-w-0 flex-1 flex flex-col justify-start truncate text-end">
+        <div className="text-sm font-semibold text-black truncate" title={exercise.name}>
+          {exercise.name}
+        </div>
+        <div className="text-xs text-exerciseItemTitle truncate mt-0.5" title={setsDisplay}>
+          {setsDisplay}
+        </div>
       </div>
     </div>
   );

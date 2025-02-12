@@ -16,6 +16,7 @@ export default {
         dateHeader: "#6A7988",
         dateIndicator: "#728096",
         workoutCardTitle: "#95A6B7",
+        exerciseItemTitle: "#919CAD",
       },
       borderColor: {
         border: "rgba(34, 36, 38, 0.15)",

@@ -1,10 +1,12 @@
 "use client";
 
 import { createContext, useContext, ReactNode, useState } from "react";
+import { sampleWorkouts } from "@/data/sample-workouts";
 
 export type Exercise = {
   id: string;
   name: string;
+  position: number;
   sets: {
     reps: number;
     weight: number;
@@ -28,6 +30,7 @@ type TrainingContextType = {
   moveWorkout: (fromDay: Date, toDay: Date, workoutId: string) => void;
   moveExercise: (fromWorkoutId: string, toWorkoutId: string, exerciseId: string) => void;
   reorderWorkout: (dayDate: Date, fromPosition: number, toPosition: number) => void;
+  reorderExercise: (workoutId: string, fromPosition: number, toPosition: number) => void;
 };
 
 const TrainingContext = createContext<TrainingContextType | undefined>(undefined);
@@ -38,66 +41,6 @@ export const useTraining = () => {
     throw new Error("useTraining must be used within a TrainingProvider");
   }
   return context;
-};
-
-const generateSampleWorkouts = (): Workout[] => {
-  return [
-    {
-      id: "w1",
-      name: "CHEST DAY - WITH ARM EXERCISES",
-      position: 0,
-      exercises: [
-        {
-          id: "e1",
-          name: "Bench Press Medium Grip",
-          sets: [
-            { weight: 50, reps: 5 },
-            { weight: 60, reps: 5 },
-            { weight: 70, reps: 5 },
-          ],
-        },
-        {
-          id: "e2",
-          name: "Exercise B",
-          sets: [{ weight: 40, reps: 10 }],
-        },
-      ],
-    },
-    {
-      id: "w2",
-      name: "LEG DAY",
-      position: 1,
-      exercises: [
-        {
-          id: "e3",
-          name: "Exercise C",
-          sets: [{ weight: 30, reps: 6 }],
-        },
-        {
-          id: "e4",
-          name: "Exercise D",
-          sets: [{ weight: 40, reps: 5 }],
-        },
-        {
-          id: "e5",
-          name: "Exercise E",
-          sets: [{ weight: 50, reps: 5 }],
-        },
-      ],
-    },
-    {
-      id: "w3",
-      name: "ARM DAY",
-      position: 2,
-      exercises: [
-        {
-          id: "e6",
-          name: "Exercise F",
-          sets: [{ weight: 60, reps: 6 }],
-        },
-      ],
-    },
-  ];
 };
 
 const generateInitialWeek = (): DayWorkouts[] => {
@@ -115,10 +58,10 @@ const generateInitialWeek = (): DayWorkouts[] => {
 
     if (dayOfWeek === 2) {
       // Tuesday
-      workouts = [generateSampleWorkouts()[0]]; // CHEST DAY
+      workouts = [sampleWorkouts[0]]; // CHEST DAY
     } else if (dayOfWeek === 3) {
       // Wednesday
-      workouts = [generateSampleWorkouts()[1], generateSampleWorkouts()[2]]; // LEG DAY and ARM DAY
+      workouts = [sampleWorkouts[1], sampleWorkouts[2]]; // LEG DAY and ARM DAY
     }
 
     return {
@@ -177,34 +120,47 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
 
   const moveExercise = (fromWorkoutId: string, toWorkoutId: string, exerciseId: string) => {
     setWeekWorkouts((prev) => {
-      // Find the exercise first to ensure it exists
-      const sourceWorkout = prev.flatMap((d) => d.workouts).find((w) => w?.id === fromWorkoutId);
+      const newWeekWorkouts = [...prev];
 
-      const exercise = sourceWorkout?.exercises.find((e) => e?.id === exerciseId);
+      // Find source workout
+      const fromDayIndex = newWeekWorkouts.findIndex((day) => day.workouts.some((w) => w.id === fromWorkoutId));
+      if (fromDayIndex === -1) return prev;
 
-      // Return if exercise not found
-      if (!exercise) return prev;
+      const fromWorkoutIndex = newWeekWorkouts[fromDayIndex].workouts.findIndex((w) => w.id === fromWorkoutId);
+      if (fromWorkoutIndex === -1) return prev;
 
-      return prev.map((day) => ({
-        ...day,
-        workouts: day.workouts
-          .map((workout) => {
-            if (workout?.id === fromWorkoutId) {
-              return {
-                ...workout,
-                exercises: workout.exercises.filter((e) => e?.id !== exerciseId),
-              };
-            }
-            if (workout?.id === toWorkoutId) {
-              return {
-                ...workout,
-                exercises: [...workout.exercises, exercise],
-              };
-            }
-            return workout;
-          })
-          .filter(Boolean) as Workout[],
-      }));
+      // Find target workout
+      const toDayIndex = newWeekWorkouts.findIndex((day) => day.workouts.some((w) => w.id === toWorkoutId));
+      if (toDayIndex === -1) return prev;
+
+      const toWorkoutIndex = newWeekWorkouts[toDayIndex].workouts.findIndex((w) => w.id === toWorkoutId);
+      if (toWorkoutIndex === -1) return prev;
+
+      // Find and remove exercise from source
+      const fromWorkout = newWeekWorkouts[fromDayIndex].workouts[fromWorkoutIndex];
+      const exerciseIndex = fromWorkout.exercises.findIndex((e) => e.id === exerciseId);
+      if (exerciseIndex === -1) return prev;
+
+      const [exercise] = fromWorkout.exercises.splice(exerciseIndex, 1);
+
+      // Update positions for remaining exercises in source workout
+      fromWorkout.exercises.forEach((ex, idx) => {
+        ex.position = idx;
+      });
+
+      // Add exercise to target workout
+      const toWorkout = newWeekWorkouts[toDayIndex].workouts[toWorkoutIndex];
+      const newPosition = toWorkout.exercises.length;
+      toWorkout.exercises.push({
+        ...exercise,
+        position: newPosition,
+      });
+
+      // Update both workouts
+      newWeekWorkouts[fromDayIndex].workouts[fromWorkoutIndex] = fromWorkout;
+      newWeekWorkouts[toDayIndex].workouts[toWorkoutIndex] = toWorkout;
+
+      return newWeekWorkouts;
     });
   };
 
@@ -248,8 +204,45 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const reorderExercise = (workoutId: string, fromPosition: number, toPosition: number) => {
+    setWeekWorkouts((prev) => {
+      // Deep clone to ensure state updates
+      const newWeekWorkouts = structuredClone(prev);
+
+      // Find the workout containing the exercise
+      const workoutDayIndex = newWeekWorkouts.findIndex((day) => day.workouts.some((w) => w.id === workoutId));
+
+      if (workoutDayIndex === -1) return prev;
+
+      const workoutIndex = newWeekWorkouts[workoutDayIndex].workouts.findIndex((w) => w.id === workoutId);
+      if (workoutIndex === -1) return prev;
+
+      const workout = newWeekWorkouts[workoutDayIndex].workouts[workoutIndex];
+      const exercises = workout.exercises;
+
+      // Ensure positions are within bounds
+      if (fromPosition < 0 || fromPosition >= exercises.length || toPosition < 0 || toPosition >= exercises.length) {
+        return prev;
+      }
+
+      // Remove exercise from old position and insert at new position
+      const [movedExercise] = exercises.splice(fromPosition, 1);
+      exercises.splice(toPosition, 0, movedExercise);
+
+      // Update positions for all exercises
+      exercises.forEach((exercise, index) => {
+        exercise.position = index;
+      });
+
+      // Update the workout directly in the newWeekWorkouts array
+      newWeekWorkouts[workoutDayIndex].workouts[workoutIndex].exercises = exercises;
+
+      return newWeekWorkouts;
+    });
+  };
+
   return (
-    <TrainingContext.Provider value={{ weekWorkouts, moveWorkout, moveExercise, reorderWorkout }}>
+    <TrainingContext.Provider value={{ weekWorkouts, moveWorkout, moveExercise, reorderWorkout, reorderExercise }}>
       {children}
     </TrainingContext.Provider>
   );

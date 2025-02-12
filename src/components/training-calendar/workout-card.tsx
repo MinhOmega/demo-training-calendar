@@ -1,11 +1,10 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { Workout } from "@/contexts/training-context";
-import { ExerciseItem } from "./exercise-item";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Image from "next/image";
-import React from "react";
+import { ExerciseItem } from "./exercise-item";
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -43,25 +42,30 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className={`bg-white rounded-workout border border-border2 ${dragState ? "opacity-50 scale-105" : ""} ${
+      className={`bg-main rounded-workout border border-border2 ${dragState ? "opacity-50 scale-105" : ""} ${
         isBeingDragged ? "z-50" : "z-0"
       }`}
     >
       <div className="py-[5px]">
         <div className="flex items-center justify-between mb-2 px-[7px]">
-          <h3 className="text-purple text-sm font-semibold truncate flex-1 pr-2">{workout.name}</h3>
-          <button className="text-gray-400 hover:text-gray-600" aria-label="More options">
+          <h3 className="text-purple text-sm font-bold truncate flex-1 pr-2">{workout.name}</h3>
+          <button 
+            className="text-gray-400 hover:text-gray-600" 
+            aria-label="More options"
+            {...listeners}
+            {...attributes}
+          >
             <Image src="/icons/ic-drag.svg" alt="Drag" width={12} height={3} />
           </button>
         </div>
 
-        <div className="space-y-2 px-[3px]">
-          {workout.exercises.map((exercise) => (
-            <ExerciseItem key={exercise.id} exercise={exercise} workoutId={workout.id} />
-          ))}
-        </div>
+        <SortableContext items={workout.exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2 px-[3px]">
+            {workout.exercises.map((exercise, index) => (
+              <ExerciseItem key={exercise.id} exercise={exercise} workoutId={workout.id} position={index} />
+            ))}
+          </div>
+        </SortableContext>
       </div>
 
       {/* Add exercise button */}
