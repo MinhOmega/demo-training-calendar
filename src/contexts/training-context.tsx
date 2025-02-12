@@ -31,6 +31,8 @@ type TrainingContextType = {
   moveExercise: (fromWorkoutId: string, toWorkoutId: string, exerciseId: string) => void;
   reorderWorkout: (dayDate: Date, fromPosition: number, toPosition: number) => void;
   reorderExercise: (workoutId: string, fromPosition: number, toPosition: number) => void;
+  createWorkout: (date: Date, name: string) => void;
+  createExercise: (workoutId: string, name: string, weight: number, reps: number) => void;
 };
 
 const TrainingContext = createContext<TrainingContextType | undefined>(undefined);
@@ -241,8 +243,75 @@ export const TrainingProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const createWorkout = (date: Date, name: string) => {
+    setWeekWorkouts((prev) => {
+      const newWeekWorkouts = [...prev];
+      const dayIndex = newWeekWorkouts.findIndex((d) => d.date.toDateString() === date.toDateString());
+
+      if (dayIndex === -1) return prev;
+
+      const newWorkout: Workout = {
+        id: `w${Date.now()}`, // Generate a unique ID
+        name,
+        position: newWeekWorkouts[dayIndex].workouts.length,
+        exercises: [],
+      };
+
+      newWeekWorkouts[dayIndex] = {
+        ...newWeekWorkouts[dayIndex],
+        workouts: [...newWeekWorkouts[dayIndex].workouts, newWorkout],
+      };
+
+      return newWeekWorkouts;
+    });
+  };
+
+  const createExercise = (workoutId: string, name: string, weight: number, reps: number) => {
+    setWeekWorkouts((prev) => {
+      const newWeekWorkouts = structuredClone(prev);
+      
+      // Find the workout
+      const dayIndex = newWeekWorkouts.findIndex((day) => 
+        day.workouts.some((w) => w.id === workoutId)
+      );
+      
+      if (dayIndex === -1) return prev;
+      
+      const workoutIndex = newWeekWorkouts[dayIndex].workouts.findIndex(
+        (w) => w.id === workoutId
+      );
+      
+      if (workoutIndex === -1) return prev;
+      
+      const workout = newWeekWorkouts[dayIndex].workouts[workoutIndex];
+      
+      // Create new exercise
+      const newExercise: Exercise = {
+        id: `e${Date.now()}`,
+        name,
+        position: workout.exercises.length,
+        sets: [{ weight, reps }],
+      };
+      
+      // Add exercise to workout
+      workout.exercises.push(newExercise);
+      
+      return newWeekWorkouts;
+    });
+  };
+
   return (
-    <TrainingContext.Provider value={{ weekWorkouts, moveWorkout, moveExercise, reorderWorkout, reorderExercise }}>
+    <TrainingContext.Provider
+      value={{
+        weekWorkouts,
+        moveWorkout,
+        moveExercise,
+        reorderWorkout,
+        reorderExercise,
+        createWorkout,
+        createExercise,
+      }}
+    >
       {children}
     </TrainingContext.Provider>
   );

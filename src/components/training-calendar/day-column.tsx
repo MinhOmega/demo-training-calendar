@@ -5,6 +5,9 @@ import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import Image from "next/image";
 import { WorkoutCard } from "./workout-card";
+import { useState } from "react";
+import { useTraining } from "@/contexts/training-context";
+import { WorkoutModal } from "../modal/workout-modal";
 
 interface DayColumnProps {
   day: DayWorkouts;
@@ -20,12 +23,19 @@ export const DayColumn = ({ day }: DayColumnProps) => {
     },
   });
 
+  const { createWorkout } = useTraining();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const isToday = day.date.toDateString() === new Date().toDateString();
 
   // Sort workouts by position
   const sortedWorkouts = [...day.workouts]
     .filter((workout): workout is Workout => Boolean(workout && workout.id))
     .sort((a, b) => a.position - b.position);
+
+  const handleCreateWorkout = (workoutName: string) => {
+    createWorkout(day.date, workoutName);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -50,6 +60,7 @@ export const DayColumn = ({ day }: DayColumnProps) => {
 
         {/* Add workout button */}
         <button
+          onClick={() => setIsModalOpen(true)}
           className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
           aria-label="Add workout"
         >
@@ -63,6 +74,13 @@ export const DayColumn = ({ day }: DayColumnProps) => {
             ))}
           </div>
         </SortableContext>
+
+        <WorkoutModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleCreateWorkout}
+          date={day.date}
+        />
       </div>
     </div>
   );

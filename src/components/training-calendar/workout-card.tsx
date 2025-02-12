@@ -5,6 +5,9 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import Image from "next/image";
 import { ExerciseItem } from "./exercise-item";
+import { useState } from "react";
+import { useTraining } from "@/contexts/training-context";
+import { ExerciseModal } from "../modal/exercise-modal";
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -14,6 +17,9 @@ interface WorkoutCardProps {
 }
 
 export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: WorkoutCardProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { createExercise } = useTraining();
+
   const {
     attributes,
     listeners,
@@ -38,6 +44,10 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
     transition,
   };
 
+  const handleCreateExercise = (exerciseName: string, weight: number, reps: number) => {
+    createExercise(workout.id, exerciseName, weight, reps);
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -48,7 +58,7 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
     >
       <div className="py-[5px]">
         <div className="flex items-center justify-between mb-2 px-[7px]">
-          <h3 className="text-purple text-sm font-bold truncate flex-1 pr-2">{workout.name}</h3>
+          <h3 className="text-purple text-sm font-bold truncate flex-1 pr-2" title={workout.name}>{workout.name}</h3>
           <button 
             className="text-gray-400 hover:text-gray-600" 
             aria-label="More options"
@@ -69,9 +79,20 @@ export const WorkoutCard = ({ workout, fromDay, isDragging = false, position }: 
       </div>
 
       {/* Add exercise button */}
-      <button className="w-full h-5 flex items-center justify-end pr-1" aria-label="Add exercise">
+      <button 
+        onClick={() => setIsModalOpen(true)}
+        className="w-full h-5 flex items-center justify-end pr-1" 
+        aria-label="Add exercise"
+      >
         <Image src="/icons/ic-add.svg" alt="Add" width={13} height={14} />
       </button>
+
+      <ExerciseModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateExercise}
+        workoutName={workout.name}
+      />
     </div>
   );
 };
